@@ -1,0 +1,12 @@
+services:
+  go-app:
+    build:
+      context: .
+      dockerfile: module1/Dockerfile
+    container_name: my-go-app1
+
+  go-app2:
+    build:
+      context: .
+      dockerfile: module2/Dockerfile
+    container_name: my-go-app2
