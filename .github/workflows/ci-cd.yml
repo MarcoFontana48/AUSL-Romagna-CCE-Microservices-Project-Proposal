@@ -167,7 +167,7 @@ jobs:
                   if module_prefix=$(go list -m 2>/dev/null); then
                     echo "Found module prefix: $module_prefix"
                     # Replace the full module path with relative path from repo root
-                    sed -i "s|${module_prefix}/||g" "../$coverage_file"
+                    sed -i "s|${module_prefix}/||g" "$coverage_file"
                     echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
                   else
                     echo "Could not determine module name with 'go list -m', trying go.mod file"
@@ -176,7 +176,7 @@ jobs:
                       echo "Found module prefix from go.mod: $module_prefix"
                       if [ -n "$module_prefix" ]; then
                         # Replace the full module path with relative path from repo root
-                        sed -i "s|${module_prefix}/||g" "../$coverage_file"
+                        sed -i "s|${module_prefix}/||g" "$coverage_file"
                         echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
                       fi
                     else
