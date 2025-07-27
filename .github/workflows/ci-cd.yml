@@ -29,13 +29,15 @@ jobs:
           - ubuntu-22.04
           - windows-2022
           - macos-12
+
         module:
-          - name: "api_gateway";
-          - path: "./api_gateway"
-          - name: "service";
-          - path: "./service"
-          - name: "utils";
-          - path: "./utils"
+          - name: "api_gateway"
+            path: "./api_gateway"
+          - name: "service"
+            path: "./service"
+          - name: "utils"
+            path: "./utils"
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
