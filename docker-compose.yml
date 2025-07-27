@@ -1,12 +1,16 @@
 services:
   api-gateway:
     build:
-      context: ./api_gateway  # executes commands from this directory
+      context: ./api_gateway
       dockerfile: Dockerfile
     container_name: api_gateway
+    environment:
+      - LOG_LEVEL=info
 
   service:
     build:
-      context: ./service  # executes commands from this directory
+      context: ./service
       dockerfile: Dockerfile
     container_name: service
+    environment:
+      - LOG_LEVEL=debug

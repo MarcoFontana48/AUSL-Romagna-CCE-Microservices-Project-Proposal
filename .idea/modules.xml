@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/CCE_Microservices.iml" filepath="$PROJECT_DIR$/CCE_Microservices.iml" />
       <module fileurl="file://$PROJECT_DIR$/api_gateway.iml" filepath="$PROJECT_DIR$/api_gateway.iml" />
       <module fileurl="file://$PROJECT_DIR$/service.iml" filepath="$PROJECT_DIR$/service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/utils.iml" filepath="$PROJECT_DIR$/utils.iml" />
     </modules>
   </component>
 </project>
