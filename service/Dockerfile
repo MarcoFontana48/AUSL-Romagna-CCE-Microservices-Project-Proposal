@@ -1,8 +1,9 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
-COPY service/go.mod ./
+COPY service/ ./
 COPY utils/ ../utils/
-COPY service/main.go .
+RUN go mod tidy
+RUN go mod download
 RUN go build -o service main.go
 
 FROM alpine:latest
