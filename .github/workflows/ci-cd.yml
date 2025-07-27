@@ -30,75 +30,156 @@ jobs:
           - windows-2022
           - macos-12
 
-        module:
-          - name: "api_gateway"
-            path: "./api_gateway"
-          - name: "service"
-            path: "./service"
-          - name: "utils"
-            path: "./utils"
-
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           check-latest: true
 
-      - name: Cache Go modules for ${{ matrix.module.name }}
+      - name: Cache Go modules
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.module.name }}-${{ hashFiles(format('{0}/go.sum', matrix.module.path)) }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.module.name }}-
             ${{ runner.os }}-go-
 
-      - name: Download dependencies for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go mod download
-
-      - name: Verify dependencies for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go mod verify
-
-      - name: Run tests for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go test -v ./...
-
-      - name: Run tests with race detector for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go test -race -short ./...
-
-      - name: Run tests with coverage for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go test -coverprofile=coverage.out ./...
-
-      - name: Display coverage report for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
-        run: go tool cover -func=coverage.out
-
-      - name: Check test coverage threshold for ${{ matrix.module.name }}
-        working-directory: ${{ matrix.module.path }}
+      - name: Test all modules on ${{ matrix.os }}
         run: |
-          if [ -f coverage.out ]; then
-            COVERAGE=$(go tool cover -func=coverage.out \
-              | grep total \
-              | awk '{print substr($3, 1, length($3)-1)}')
-            echo "Total coverage: ${COVERAGE}%"
+          # Define modules
+          modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
+          
+          # Initialize variables for summary
+          total_coverage=0
+          module_count=0
+          failed_modules=()
+          
+          echo "=== Testing all modules on ${{ matrix.os }} ==="
+          echo ""
+          
+          # Loop through each module
+          for module_info in "${modules[@]}"; do
+            module_name="${module_info%%:*}"
+            module_path="${module_info##*:}"
+          
+            echo "========================================"
+            echo "Testing module: $module_name"
+            echo "Path: $module_path"
+            echo "========================================"
+          
+            cd "$module_path"
+          
+            # Download and verify dependencies
+            echo "Downloading dependencies..."
+            if ! go mod download; then
+              echo "Failed to download dependencies for $module_name"
+              failed_modules+=("$module_name:deps")
+              cd - > /dev/null
+              continue
+            fi
+          
+            echo "Verifying dependencies..."
+            if ! go mod verify; then
+              echo "Failed to verify dependencies for $module_name"
+              failed_modules+=("$module_name:verify")
+              cd - > /dev/null
+              continue
+            fi
+          
+            # Run basic tests
+            echo "Running tests..."
+            if ! go test -v ./...; then
+              echo "Tests failed for $module_name"
+              failed_modules+=("$module_name:tests")
+              cd - > /dev/null
+              continue
+            fi
+          
+            # Run tests with race detector
+            echo "Running tests with race detector..."
+            if ! go test -race -short ./...; then
+              echo "Race detector tests failed for $module_name"
+              failed_modules+=("$module_name:race")
+              cd - > /dev/null
+              continue
+            fi
+          
+            # Run tests with coverage
+            echo "Running tests with coverage..."
+            if go test -coverprofile=coverage.out ./...; then
+              if [ -f coverage.out ]; then
+                echo "Coverage report for $module_name:"
+                go tool cover -func=coverage.out
+          
+                # Extract coverage percentage
+                coverage=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+                if [ -n "$coverage" ]; then
+                  echo "Total coverage for $module_name: ${coverage}%"
+          
+                  # Add to total for average calculation
+                  total_coverage=$(echo "$total_coverage + $coverage" | bc -l)
+                  module_count=$((module_count + 1))
+                else
+                  echo "Could not extract coverage percentage for $module_name"
+                fi
+              else
+                echo "No coverage file generated for $module_name"
+              fi
+            else
+              echo "Coverage tests failed for $module_name"
+              failed_modules+=("$module_name:coverage-tests")
+            fi
+          
+            echo "Completed testing $module_name"
+            echo ""
+            cd - > /dev/null
+          done
+          
+          # Summary
+          echo "========================================"
+          echo "TEST SUMMARY for ${{ matrix.os }}"
+          echo "========================================"
+          
+          if [ ${#failed_modules[@]} -eq 0 ]; then
+            echo "All modules passed all tests!"
           else
-            echo "No coverage file found, skipping."
+            echo "Some modules had failures:"
+            for failure in "${failed_modules[@]}"; do
+              echo "  - $failure"
+            done
           fi
+          
+          if [ $module_count -gt 0 ]; then
+            average_coverage=$(echo "scale=2; $total_coverage / $module_count" | bc -l)
+            echo "Average coverage across all modules: ${average_coverage}%"
+          fi
+          
+          echo "========================================"
+          
+          # Exit with error if any module failed
+          if [ ${#failed_modules[@]} -gt 0 ]; then
+            echo "Build failed due to module failures"
+            exit 1
+          fi
+          
+          echo "All tests passed successfully!"
 
-#      - name: Upload coverage to Codecov for ${{ matrix.module.name }}
-#        uses: codecov/codecov-action@v4
-#        with:
-#          file: ${{ matrix.module.path }}/coverage.out
-#          flags: ${{ matrix.module.name }}
-#          name: codecov-${{ matrix.module.name }}
-#        continue-on-error: true
+      # Optional: Upload coverage reports (commented out as in your example)
+      # - name: Upload coverage reports
+      #   run: |
+      #     modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
+      #     for module_info in "${modules[@]}"; do
+      #       module_name="${module_info%%:*}"
+      #       module_path="${module_info##*:}"
+      #       if [ -f "$module_path/coverage.out" ]; then
+      #         echo "Uploading coverage for $module_name"
+      #         # Upload logic here
+      #       fi
+      #     done
 
   push-docker-images:
     runs-on: ubuntu-latest
