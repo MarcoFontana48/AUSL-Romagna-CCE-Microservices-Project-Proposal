@@ -26,8 +26,8 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
-#          - windows-2022
-#          - macos-14
+          - windows-2022
+          - macos-14
 
     steps:
       - uses: actions/checkout@v4
@@ -56,9 +56,6 @@ jobs:
           total_coverage=0
           module_count=0
           failed_modules=()
-          
-          # Create coverage directory
-          mkdir -p coverage_reports
           
           echo "=== Testing all modules on ${{ matrix.os }} ==="
           echo ""
@@ -146,43 +143,19 @@ jobs:
           
             # Run tests with coverage
             echo "Running tests with coverage..."
-            coverage_file="../coverage_reports/${module_name}_coverage.out"
-            if go test -coverprofile="$coverage_file" ./...; then
-              if [ -f "$coverage_file" ]; then
+            if go test -coverprofile=coverage.out ./...; then
+              if [ -f coverage.out ]; then
                 echo "Coverage report for $module_name:"
-                go tool cover -func="$coverage_file"
+                go tool cover -func=coverage.out
           
                 # Extract coverage percentage
-                coverage=$(go tool cover -func="$coverage_file" | grep total | awk '{print substr($3, 1, length($3)-1)}')
+                coverage=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
                 if [ -n "$coverage" ] && [ "$coverage" != "0.0" ]; then
                   echo "Total coverage for $module_name: ${coverage}%"
           
                   # Add to total for average calculation
                   total_coverage=$(add_coverage "$total_coverage" "$coverage")
                   module_count=$((module_count + 1))
-          
-                  # Fix paths in coverage file for Codecov - convert absolute module paths to relative paths
-                  echo "Fixing paths in coverage file for Codecov..."
-                  # Get the module name using go list -m (more reliable)
-                  if module_prefix=$(go list -m 2>/dev/null); then
-                    echo "Found module prefix: $module_prefix"
-                    # Replace the full module path with relative path from repo root
-                    sed -i "s|${module_prefix}/||g" "$coverage_file"
-                    echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
-                  else
-                    echo "Could not determine module name with 'go list -m', trying go.mod file"
-                    if [ -f "go.mod" ]; then
-                      module_prefix=$(head -1 go.mod | awk '{print $2}')
-                      echo "Found module prefix from go.mod: $module_prefix"
-                      if [ -n "$module_prefix" ]; then
-                        # Replace the full module path with relative path from repo root
-                        sed -i "s|${module_prefix}/||g" "$coverage_file"
-                        echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
-                      fi
-                    else
-                      echo "No go.mod file found, skipping path fixes"
-                    fi
-                  fi
                 else
                   echo "No coverage data available for $module_name (likely no testable code)"
                 fi
@@ -230,84 +203,10 @@ jobs:
           
           echo "All tests passed successfully!"
 
-      - name: Merge coverage reports
-        if: matrix.os == 'ubuntu-22.04'  # Only run on one OS to avoid duplicate uploads
-        run: |
-          # Install gocovmerge to merge coverage files
-          go install github.com/wadey/gocovmerge@latest
-          
-          # Check if we have any coverage files
-          if ls coverage_reports/*_coverage.out 1> /dev/null 2>&1; then
-            echo "Merging coverage reports..."
-            gocovmerge coverage_reports/*_coverage.out > merged_coverage.out
-          
-            echo "Coverage files merged successfully"
-            echo "Coverage file size: $(wc -l < merged_coverage.out) lines"
-          
-            # Display a sample of the merged coverage file to verify paths
-            echo "Sample coverage file content (first 10 lines):"
-            head -10 merged_coverage.out
-          
-            # Verify that paths look correct (should be relative to repo root)
-            echo "Checking for problematic absolute paths..."
-            if grep -q "github.com/" merged_coverage.out; then
-              echo "WARNING: Found absolute module paths in coverage file!"
-              echo "This may cause Codecov to not show coverage data properly."
-            else
-              echo "Coverage file paths look good (relative paths found)"
-            fi
-          else
-            echo "No coverage files found to merge"
-            # Create empty coverage file to prevent Codecov from failing
-            touch merged_coverage.out
-          fi
-
-      - name: Upload coverage reports to Codecov
-        if: matrix.os == 'ubuntu-22.04'  # Only upload from one OS
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./merged_coverage.out
-          flags: unittests
-          name: codecov-umbrella-${{ matrix.os }}
-          fail_ci_if_error: false  # Set to true if you want CI to fail when Codecov upload fails
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload coverage HTML report as artifact
-        if: matrix.os == 'ubuntu-22.04' && hashFiles('coverage_reports/*_coverage.out') != ''
-        run: |
-          # Generate individual HTML reports for each module in their own context
-          echo "Generating HTML coverage reports..."
-          mkdir -p coverage_html
-          
-          modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
-          
-          for module_info in "${modules[@]}"; do
-            module_name="${module_info%%:*}"
-            module_path="${module_info##*:}"
-            coverage_file="coverage_reports/${module_name}_coverage.out"
-          
-            if [ -f "$coverage_file" ]; then
-              echo "Generating HTML report for $module_name..."
-              cd "$module_path"
-              go tool cover -html="../$coverage_file" -o="../coverage_html/${module_name}_coverage.html"
-              cd - > /dev/null
-            fi
-          done
-
-      - name: Upload coverage HTML reports as artifacts
-        if: matrix.os == 'ubuntu-22.04'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: coverage_html/
-          retention-days: 30
-
   push-docker-images:
     runs-on: ubuntu-22.04
     name: Build and Push Docker Images
-    needs: build-and-test
+    needs: build-and-test  # This ensures tests must pass before building
 
     strategy:
       matrix:
