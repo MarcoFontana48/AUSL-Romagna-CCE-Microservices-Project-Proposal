@@ -3,6 +3,11 @@ name: Build and Push Docker Images
 on:
   push:
     branches: [ dev ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOCKER_REGISTRY: docker.io
@@ -12,6 +17,16 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     name: Build and Push Docker Images
+
+    strategy:
+      matrix:
+        service:
+          - name: "api_gateway"
+            dockerfile: "./api_gateway/Dockerfile"
+            suffix: "api_gateway"
+          - name: "service"
+            dockerfile: "./service/Dockerfile"
+            suffix: "service"
 
     steps:
       - name: Checkout code
@@ -26,44 +41,23 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Extract metadata for Api Gateway
-        id: meta1
+      - name: Extract metadata for ${{ matrix.service.name }}
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=ref,event=branch,suffix=-api_gateway
-            type=sha,prefix=dev-,suffix=-api_gateway
-            type=raw,value=api_gateway-latest,enable={{is_default_branch}}
+            type=ref,event=branch,suffix=-${{ matrix.service.suffix }}
+            type=sha,prefix=dev-,suffix=-${{ matrix.service.suffix }}
+            type=raw,value=${{ matrix.service.suffix }}-latest,enable={{is_default_branch}}
 
-      - name: Extract metadata for Service
-        id: meta2
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_REPOSITORY }}
-          tags: |
-            type=ref,event=branch,suffix=-service
-            type=sha,prefix=dev-,suffix=-service
-            type=raw,value=service-latest,enable={{is_default_branch}}
-
-      - name: Build and push Api Gateway
+      - name: Build and push ${{ matrix.service.name }}
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./api_gateway/Dockerfile
+          file: ${{ matrix.service.dockerfile }}
           push: true
-          tags: ${{ steps.meta1.outputs.tags }}
-          labels: ${{ steps.meta1.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push Service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./service/Dockerfile
-          push: true
-          tags: ${{ steps.meta2.outputs.tags }}
-          labels: ${{ steps.meta2.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
