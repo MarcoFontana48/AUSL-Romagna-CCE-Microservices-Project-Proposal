@@ -57,6 +57,9 @@ jobs:
           module_count=0
           failed_modules=()
           
+          # Create coverage directory
+          mkdir -p coverage_reports
+          
           echo "=== Testing all modules on ${{ matrix.os }} ==="
           echo ""
           
@@ -143,13 +146,14 @@ jobs:
           
             # Run tests with coverage
             echo "Running tests with coverage..."
-            if go test -coverprofile=coverage.out ./...; then
-              if [ -f coverage.out ]; then
+            coverage_file="../coverage_reports/${module_name}_coverage.out"
+            if go test -coverprofile="$coverage_file" ./...; then
+              if [ -f "$coverage_file" ]; then
                 echo "Coverage report for $module_name:"
-                go tool cover -func=coverage.out
+                go tool cover -func="$coverage_file"
           
                 # Extract coverage percentage
-                coverage=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+                coverage=$(go tool cover -func="$coverage_file" | grep total | awk '{print substr($3, 1, length($3)-1)}')
                 if [ -n "$coverage" ] && [ "$coverage" != "0.0" ]; then
                   echo "Total coverage for $module_name: ${coverage}%"
           
@@ -203,23 +207,52 @@ jobs:
           
           echo "All tests passed successfully!"
 
-      # Optional: Upload coverage reports (commented out as in your example)
-      # - name: Upload coverage reports
-      #   run: |
-      #     modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
-      #     for module_info in "${modules[@]}"; do
-      #       module_name="${module_info%%:*}"
-      #       module_path="${module_info##*:}"
-      #       if [ -f "$module_path/coverage.out" ]; then
-      #         echo "Uploading coverage for $module_name"
-      #         # Upload logic here
-      #       fi
-      #     done
+      - name: Merge coverage reports
+        if: matrix.os == 'ubuntu-22.04'  # Only run on one OS to avoid duplicate uploads
+        run: |
+          # Install gocovmerge to merge coverage files
+          go install github.com/wadey/gocovmerge@latest
+          
+          # Check if we have any coverage files
+          if ls coverage_reports/*_coverage.out 1> /dev/null 2>&1; then
+            echo "Merging coverage reports..."
+            gocovmerge coverage_reports/*_coverage.out > merged_coverage.out
+          
+            echo "Merged coverage report:"
+            go tool cover -func=merged_coverage.out
+          
+            # Generate HTML report for artifact upload (optional)
+            go tool cover -html=merged_coverage.out -o coverage.html
+          else
+            echo "No coverage files found to merge"
+            # Create empty coverage file to prevent Codecov from failing
+            touch merged_coverage.out
+          fi
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.os == 'ubuntu-22.04' # only uploads from one OS to avoid duplicate uploads
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./merged_coverage.out
+          flags: unittests
+          name: codecov-umbrella-${{ matrix.os }}
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage HTML report as artifact
+        if: matrix.os == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html
+          retention-days: 30
 
   push-docker-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Build and Push Docker Images
-    needs: build-and-test  # This ensures tests must pass before building
+    needs: build-and-test
 
     strategy:
       matrix:
