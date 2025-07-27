@@ -1,16 +1,18 @@
 services:
-  api-gateway:
-    build:
-      context: ./api_gateway
-      dockerfile: Dockerfile
-    container_name: api_gateway
-    environment:
-      - LOG_LEVEL=info
-
   service:
     build:
-      context: ./service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: service/Dockerfile
     container_name: service
     environment:
       - LOG_LEVEL=debug
+      - LOG_ADD_SOURCE=true
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    container_name: api_gateway
+    environment:
+      - LOG_LEVEL=info
+      - LOG_ADD_SOURCE=true
