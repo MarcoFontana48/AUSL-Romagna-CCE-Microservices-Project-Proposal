@@ -163,12 +163,25 @@ jobs:
           
                   # Fix paths in coverage file for Codecov - convert absolute module paths to relative paths
                   echo "Fixing paths in coverage file for Codecov..."
-                  # Get the module name from go.mod to replace in paths
-                  module_prefix=$(go mod print -json | grep '"Path"' | sed 's/.*"Path": "\(.*\)".*/\1/')
-                  if [ -n "$module_prefix" ]; then
+                  # Get the module name using go list -m (more reliable)
+                  if module_prefix=$(go list -m 2>/dev/null); then
+                    echo "Found module prefix: $module_prefix"
                     # Replace the full module path with relative path from repo root
                     sed -i "s|${module_prefix}/||g" "../$coverage_file"
                     echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
+                  else
+                    echo "Could not determine module name with 'go list -m', trying go.mod file"
+                    if [ -f "go.mod" ]; then
+                      module_prefix=$(head -1 go.mod | awk '{print $2}')
+                      echo "Found module prefix from go.mod: $module_prefix"
+                      if [ -n "$module_prefix" ]; then
+                        # Replace the full module path with relative path from repo root
+                        sed -i "s|${module_prefix}/||g" "../$coverage_file"
+                        echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
+                      fi
+                    else
+                      echo "No go.mod file found, skipping path fixes"
+                    fi
                   fi
                 else
                   echo "No coverage data available for $module_name (likely no testable code)"
@@ -218,7 +231,7 @@ jobs:
           echo "All tests passed successfully!"
 
       - name: Merge coverage reports
-        if: matrix.os == 'ubuntu-22.04'  # only run on one OS to avoid duplicate uploads
+        if: matrix.os == 'ubuntu-22.04'  # Only run on one OS to avoid duplicate uploads
         run: |
           # Install gocovmerge to merge coverage files
           go install github.com/wadey/gocovmerge@latest
@@ -250,13 +263,13 @@ jobs:
           fi
 
       - name: Upload coverage reports to Codecov
-        if: matrix.os == 'ubuntu-22.04'  # only upload from one OS
+        if: matrix.os == 'ubuntu-22.04'  # Only upload from one OS
         uses: codecov/codecov-action@v4
         with:
           file: ./merged_coverage.out
           flags: unittests
           name: codecov-umbrella-${{ matrix.os }}
-          fail_ci_if_error: false
+          fail_ci_if_error: false  # Set to true if you want CI to fail when Codecov upload fails
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
