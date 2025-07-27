@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	s := "module 1"
+	s := "api gateway module"
 	fmt.Printf("Hello and welcome, %s!\n", s)
 
 	for i := 1; i <= 5; i++ {
