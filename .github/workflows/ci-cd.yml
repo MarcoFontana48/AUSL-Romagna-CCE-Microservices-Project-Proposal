@@ -14,7 +14,7 @@ env:
   DOCKER_REPOSITORY: marcofontana17/cce_prototipo
 
 jobs:
-  test:
+  build-and-test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
 
@@ -72,10 +72,12 @@ jobs:
 
       - name: Run tests with coverage for ${{ matrix.module.name }}
         working-directory: ${{ matrix.module.path }}
+        shell: bash              # ← force Bash on Windows, macOS and Linux
         run: go test -coverprofile=coverage.out ./...
 
       - name: Display coverage report for ${{ matrix.module.name }}
         working-directory: ${{ matrix.module.path }}
+        shell: bash              # ← also force Bash here
         run: go tool cover -func=coverage.out
 
       - name: Check test coverage threshold for ${{ matrix.module.name }}
@@ -96,10 +98,10 @@ jobs:
 #          name: codecov-${{ matrix.module.name }}
 #        continue-on-error: true
 
-  build-and-push:
+  push-docker-images:
     runs-on: ubuntu-latest
     name: Build and Push Docker Images
-    needs: test  # This ensures tests must pass before building
+    needs: build-and-test  # This ensures tests must pass before building
 
     strategy:
       matrix:
