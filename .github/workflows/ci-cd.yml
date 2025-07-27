@@ -160,6 +160,16 @@ jobs:
                   # Add to total for average calculation
                   total_coverage=$(add_coverage "$total_coverage" "$coverage")
                   module_count=$((module_count + 1))
+          
+                  # Fix paths in coverage file for Codecov - convert absolute module paths to relative paths
+                  echo "Fixing paths in coverage file for Codecov..."
+                  # Get the module name from go.mod to replace in paths
+                  module_prefix=$(go mod print -json | grep '"Path"' | sed 's/.*"Path": "\(.*\)".*/\1/')
+                  if [ -n "$module_prefix" ]; then
+                    # Replace the full module path with relative path from repo root
+                    sed -i "s|${module_prefix}/||g" "../$coverage_file"
+                    echo "Fixed paths: replaced '${module_prefix}/' with relative paths"
+                  fi
                 else
                   echo "No coverage data available for $module_name (likely no testable code)"
                 fi
@@ -208,7 +218,7 @@ jobs:
           echo "All tests passed successfully!"
 
       - name: Merge coverage reports
-        if: matrix.os == 'ubuntu-22.04'  # Only run on one OS to avoid duplicate uploads
+        if: matrix.os == 'ubuntu-22.04'  # only run on one OS to avoid duplicate uploads
         run: |
           # Install gocovmerge to merge coverage files
           go install github.com/wadey/gocovmerge@latest
@@ -221,8 +231,18 @@ jobs:
             echo "Coverage files merged successfully"
             echo "Coverage file size: $(wc -l < merged_coverage.out) lines"
           
-            # Don't try to generate coverage stats here since modules aren't available
-            # Codecov will handle the processing
+            # Display a sample of the merged coverage file to verify paths
+            echo "Sample coverage file content (first 10 lines):"
+            head -10 merged_coverage.out
+          
+            # Verify that paths look correct (should be relative to repo root)
+            echo "Checking for problematic absolute paths..."
+            if grep -q "github.com/" merged_coverage.out; then
+              echo "WARNING: Found absolute module paths in coverage file!"
+              echo "This may cause Codecov to not show coverage data properly."
+            else
+              echo "Coverage file paths look good (relative paths found)"
+            fi
           else
             echo "No coverage files found to merge"
             # Create empty coverage file to prevent Codecov from failing
@@ -230,13 +250,13 @@ jobs:
           fi
 
       - name: Upload coverage reports to Codecov
-        if: matrix.os == 'ubuntu-22.04'  # Only upload from one OS
+        if: matrix.os == 'ubuntu-22.04'  # only upload from one OS
         uses: codecov/codecov-action@v4
         with:
           file: ./merged_coverage.out
           flags: unittests
           name: codecov-umbrella-${{ matrix.os }}
-          fail_ci_if_error: false  # Set to true if you want CI to fail when Codecov upload fails
+          fail_ci_if_error: false
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
