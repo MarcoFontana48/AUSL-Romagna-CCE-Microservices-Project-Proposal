@@ -48,6 +48,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Test all modules on ${{ matrix.os }}
+        # add microservices here
         run: |
           # Define modules
           modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
@@ -206,10 +207,11 @@ jobs:
   push-docker-images:
     runs-on: ubuntu-22.04
     name: Build and Push Docker Images
-    needs: build-and-test  # This ensures tests must pass before building
+    needs: build-and-test
 
     strategy:
       matrix:
+        # add microservices here
         service:
           - name: "api_gateway"
             dockerfile: "./api_gateway/Dockerfile"
