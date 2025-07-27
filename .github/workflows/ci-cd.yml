@@ -218,11 +218,11 @@ jobs:
             echo "Merging coverage reports..."
             gocovmerge coverage_reports/*_coverage.out > merged_coverage.out
           
-            echo "Merged coverage report:"
-            go tool cover -func=merged_coverage.out
+            echo "Coverage files merged successfully"
+            echo "Coverage file size: $(wc -l < merged_coverage.out) lines"
           
-            # Generate HTML report for artifact upload (optional)
-            go tool cover -html=merged_coverage.out -o coverage.html
+            # Don't try to generate coverage stats here since modules aren't available
+            # Codecov will handle the processing
           else
             echo "No coverage files found to merge"
             # Create empty coverage file to prevent Codecov from failing
@@ -230,23 +230,45 @@ jobs:
           fi
 
       - name: Upload coverage reports to Codecov
-        if: matrix.os == 'ubuntu-22.04' # only uploads from one OS to avoid duplicate uploads
+        if: matrix.os == 'ubuntu-22.04'  # Only upload from one OS
         uses: codecov/codecov-action@v4
         with:
           file: ./merged_coverage.out
           flags: unittests
           name: codecov-umbrella-${{ matrix.os }}
-          fail_ci_if_error: false
+          fail_ci_if_error: false  # Set to true if you want CI to fail when Codecov upload fails
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage HTML report as artifact
+        if: matrix.os == 'ubuntu-22.04' && hashFiles('coverage_reports/*_coverage.out') != ''
+        run: |
+          # Generate individual HTML reports for each module in their own context
+          echo "Generating HTML coverage reports..."
+          mkdir -p coverage_html
+          
+          modules=("api_gateway:./api_gateway" "service:./service" "utils:./utils")
+          
+          for module_info in "${modules[@]}"; do
+            module_name="${module_info%%:*}"
+            module_path="${module_info##*:}"
+            coverage_file="coverage_reports/${module_name}_coverage.out"
+          
+            if [ -f "$coverage_file" ]; then
+              echo "Generating HTML report for $module_name..."
+              cd "$module_path"
+              go tool cover -html="../$coverage_file" -o="../coverage_html/${module_name}_coverage.html"
+              cd - > /dev/null
+            fi
+          done
+
+      - name: Upload coverage HTML reports as artifacts
         if: matrix.os == 'ubuntu-22.04'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.html
+          name: coverage-reports
+          path: coverage_html/
           retention-days: 30
 
   push-docker-images:
