@@ -49,7 +49,7 @@ jobs:
           images: ${{ env.DOCKER_REPOSITORY }}
           tags: |
             type=raw,value=${{ matrix.service.suffix }}-latest,enable=${{ github.ref == 'refs/heads/master' }}
-            type=raw,value=${{ matrix.service.suffix }}-dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=${{ matrix.service.suffix }}-dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
             type=sha,prefix=${{ github.ref_name }}-,suffix=-${{ matrix.service.suffix }}
 
       - name: Build and push ${{ matrix.service.name }}
