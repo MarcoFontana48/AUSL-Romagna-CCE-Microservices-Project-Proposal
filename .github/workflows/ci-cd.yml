@@ -5,6 +5,7 @@ on:
     branches: [ dev ]
   workflow_dispatch:
 
+# Cancel previous workflows when new commits are pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -47,9 +48,8 @@ jobs:
         with:
           images: ${{ env.DOCKER_REPOSITORY }}
           tags: |
-            type=ref,event=branch,suffix=-${{ matrix.service.suffix }}
+            type=raw,value=${{ matrix.service.suffix }}-latest
             type=sha,prefix=dev-,suffix=-${{ matrix.service.suffix }}
-            type=raw,value=${{ matrix.service.suffix }}-latest,enable={{is_default_branch}}
 
       - name: Build and push ${{ matrix.service.name }}
         uses: docker/build-push-action@v5
