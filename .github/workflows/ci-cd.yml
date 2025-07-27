@@ -217,9 +217,19 @@ jobs:
       #     done
 
   push-docker-images:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     name: Build and Push Docker Images
-    needs: build-and-test
+    needs: build-and-test  # This ensures tests must pass before building
+
+    strategy:
+      matrix:
+        service:
+          - name: "api_gateway"
+            dockerfile: "./api_gateway/Dockerfile"
+            suffix: "api_gateway"
+          - name: "service"
+            dockerfile: "./service/Dockerfile"
+            suffix: "service"
 
     steps:
       - name: Checkout code
@@ -234,41 +244,23 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build and push Docker images for all services
-        env:
-          DOCKER_REPOSITORY: ${{ env.DOCKER_REPOSITORY }}
-        run: |
-          services=(
-            "api_gateway ./api_gateway/Dockerfile api_gateway"
-            "service ./service/Dockerfile service"
-          )
-  
-          for service in "${services[@]}"; do
-            set -- $service
-            name=$1
-            dockerfile=$2
-            suffix=$3
-  
-            echo "Building and pushing $name..."
-  
-            # Extract tags
-            tags=""
-            if [ "${GITHUB_REF}" = "refs/heads/master" ]; then
-              tags="${suffix}-latest"
-            elif [ "${GITHUB_REF}" = "refs/heads/dev" ]; then
-              tags="${suffix}-dev-latest"
-            fi
-            tags="${tags} ${GITHUB_REF_NAME}-${GITHUB_SHA:0:7}-${suffix}"
-  
-            # Build and push
-            docker buildx build \
-              --file "$dockerfile" \
-              --push \
-              --tag "${DOCKER_REPOSITORY}:${tags// / --tag ${DOCKER_REPOSITORY}:}" \
-              --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --cache-from type=gha \
-              --cache-to type=gha,mode=max \
-              .
-  
-            echo "$name image pushed with tags: $tags"
-          done
+      - name: Extract metadata for ${{ matrix.service.name }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REPOSITORY }}
+          tags: |
+            type=raw,value=${{ matrix.service.suffix }}-latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=${{ matrix.service.suffix }}-dev-latest,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=sha,prefix=${{ github.ref_name }}-,suffix=-${{ matrix.service.suffix }}
+
+      - name: Build and push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
