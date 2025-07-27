@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: ci-cd
 
 on:
   push:
@@ -15,11 +15,16 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     name: Run Tests
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
+        os:
+          - ubuntu-22.04
+          - windows-2022
+          - macos-12
+
         module:
           - name: "api_gateway"
             path: "./api_gateway"
