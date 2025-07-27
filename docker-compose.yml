@@ -6,7 +6,15 @@ services:
     container_name: service
     environment:
       - LOG_LEVEL=debug
-      - LOG_ADD_SOURCE=true
+      - LOG_ADD_SOURCE=false
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   api-gateway:
     build:
@@ -14,5 +22,16 @@ services:
       dockerfile: api_gateway/Dockerfile
     container_name: api_gateway
     environment:
-      - LOG_LEVEL=info
-      - LOG_ADD_SOURCE=true
+      - LOG_LEVEL=debug
+      - LOG_ADD_SOURCE=false
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      service:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
