@@ -18,27 +18,27 @@ jobs:
     name: Run Tests
     runs-on: ${{ matrix.os }}
 
+    # Force Bash for every `run:` step
+    defaults:
+      run:
+        shell: bash
+
     strategy:
       matrix:
         os:
           - ubuntu-22.04
           - windows-2022
           - macos-12
-
         module:
-          - name: "api_gateway"
-            path: "./api_gateway"
-          - name: "service"
-            path: "./service"
-          - name: "utils"
-            path: "./utils"
-
+          - name: "api_gateway";
+          - path: "./api_gateway"
+          - name: "service";
+          - path: "./service"
+          - name: "utils";
+          - path: "./utils"
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           check-latest: true
@@ -72,22 +72,22 @@ jobs:
 
       - name: Run tests with coverage for ${{ matrix.module.name }}
         working-directory: ${{ matrix.module.path }}
-        shell: bash              # ← force Bash on Windows, macOS and Linux
         run: go test -coverprofile=coverage.out ./...
 
       - name: Display coverage report for ${{ matrix.module.name }}
         working-directory: ${{ matrix.module.path }}
-        shell: bash              # ← also force Bash here
         run: go tool cover -func=coverage.out
 
       - name: Check test coverage threshold for ${{ matrix.module.name }}
         working-directory: ${{ matrix.module.path }}
         run: |
           if [ -f coverage.out ]; then
-            COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-            echo "Total coverage for ${{ matrix.module.name }}: ${COVERAGE}%"
+            COVERAGE=$(go tool cover -func=coverage.out \
+              | grep total \
+              | awk '{print substr($3, 1, length($3)-1)}')
+            echo "Total coverage: ${COVERAGE}%"
           else
-            echo "No coverage file found for ${{ matrix.module.name }}, skipping coverage check"
+            echo "No coverage file found, skipping."
           fi
 
 #      - name: Upload coverage to Codecov for ${{ matrix.module.name }}
