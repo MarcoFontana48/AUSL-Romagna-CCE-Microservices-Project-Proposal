@@ -1,12 +1,12 @@
 services:
-  go-app:
+  api-gateway:
     build:
       context: .
-      dockerfile: module1/Dockerfile
-    container_name: my-go-app1
+      dockerfile: api_gateway/Dockerfile
+    container_name: api_gateway
 
-  go-app2:
+  service:
     build:
       context: .
-      dockerfile: module2/Dockerfile
-    container_name: my-go-app2
+      dockerfile: service/Dockerfile
+    container_name: service

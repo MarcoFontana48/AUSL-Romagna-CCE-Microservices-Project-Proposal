@@ -1,3 +1,3 @@
-module CCE_Go_test
+module CCE_Prototipo
 
 go 1.24

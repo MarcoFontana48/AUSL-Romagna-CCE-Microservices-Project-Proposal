@@ -3,8 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CCE_Go_test.iml" filepath="$PROJECT_DIR$/CCE_Go_test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/module1.iml" filepath="$PROJECT_DIR$/module1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/module2.iml" filepath="$PROJECT_DIR$/module2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/api_gateway.iml" filepath="$PROJECT_DIR$/api_gateway.iml" />
+      <module fileurl="file://$PROJECT_DIR$/service.iml" filepath="$PROJECT_DIR$/service.iml" />
     </modules>
   </component>
 </project>
