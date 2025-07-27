@@ -1,12 +1,12 @@
 services:
   api-gateway:
     build:
-      context: .
-      dockerfile: api_gateway/Dockerfile
+      context: ./api_gateway  # executes commands from this directory
+      dockerfile: Dockerfile
     container_name: api_gateway
 
   service:
     build:
-      context: .
-      dockerfile: service/Dockerfile
+      context: ./service  # executes commands from this directory
+      dockerfile: Dockerfile
     container_name: service
