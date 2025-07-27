@@ -6,7 +6,7 @@ on:
 
 env:
   DOCKER_REGISTRY: docker.io
-  DOCKER_REPOSITORY: marco.fontana17/cce_prototipo
+  DOCKER_REPOSITORY: marcofontana17/cce_prototipo
 
 jobs:
   build-and-push:
