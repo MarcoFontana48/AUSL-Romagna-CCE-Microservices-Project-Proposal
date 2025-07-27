@@ -19,8 +19,8 @@ go.work
 
 # IDE files
 *.iml
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
