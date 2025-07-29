@@ -2,6 +2,8 @@ package circuitbreaker
 
 import "github.com/sony/gobreaker/v2"
 
+type CircuitBreaker = gobreaker.CircuitBreaker[[]byte]
+
 func NewCircuitBreaker(settings gobreaker.Settings) *gobreaker.CircuitBreaker[[]byte] {
 	return gobreaker.NewCircuitBreaker[[]byte](settings)
 }

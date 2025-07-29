@@ -25,7 +25,6 @@ func TestCircuitBreakerInitialState(t *testing.T) {
 func TestCircuitBreakerTripsOnFailureRatio(t *testing.T) {
 	cb := NewCircuitBreaker(DefaultSettings())
 
-	// Execute 3 failures (100% failure ratio, >= 3 requests)
 	for i := 0; i < 3; i++ {
 		_, err := cb.Execute(func() ([]byte, error) {
 			return nil, errors.New("test error")
@@ -35,7 +34,6 @@ func TestCircuitBreakerTripsOnFailureRatio(t *testing.T) {
 		}
 	}
 
-	// Circuit should be open now
 	if cb.State() != gobreaker.StateOpen {
 		t.Errorf("Expected circuit to be Open after failures, got %v", cb.State())
 	}
@@ -44,7 +42,6 @@ func TestCircuitBreakerTripsOnFailureRatio(t *testing.T) {
 func TestCircuitBreakerDoesNotTripWithLowFailureRatio(t *testing.T) {
 	cb := NewCircuitBreaker(DefaultSettings())
 
-	// Execute 3 requests with 33% failure ratio (1 failure, 2 successes)
 	_, err := cb.Execute(func() ([]byte, error) {
 		return nil, errors.New("test error")
 	})
@@ -61,7 +58,6 @@ func TestCircuitBreakerDoesNotTripWithLowFailureRatio(t *testing.T) {
 		}
 	}
 
-	// Circuit should still be closed (failure ratio 0.33 < 0.6)
 	if cb.State() != gobreaker.StateClosed {
 		t.Errorf("Expected circuit to remain Closed, got %v", cb.State())
 	}
@@ -70,7 +66,6 @@ func TestCircuitBreakerDoesNotTripWithLowFailureRatio(t *testing.T) {
 func TestCircuitBreakerDoesNotTripWithFewRequests(t *testing.T) {
 	cb := NewCircuitBreaker(DefaultSettings())
 
-	// Execute only 2 failures (< 3 requests threshold)
 	for i := 0; i < 2; i++ {
 		_, err := cb.Execute(func() ([]byte, error) {
 			return nil, errors.New("test error")
@@ -80,7 +75,6 @@ func TestCircuitBreakerDoesNotTripWithFewRequests(t *testing.T) {
 		}
 	}
 
-	// Circuit should remain closed (requests < 3)
 	if cb.State() != gobreaker.StateClosed {
 		t.Errorf("Expected circuit to remain Closed, got %v", cb.State())
 	}
@@ -96,7 +90,6 @@ func TestCustomSettings(t *testing.T) {
 
 	cb := NewCircuitBreaker(customSettings)
 
-	// Execute 2 failures
 	for i := 0; i < 2; i++ {
 		_, err := cb.Execute(func() ([]byte, error) {
 			return nil, errors.New("test error")
@@ -106,7 +99,6 @@ func TestCustomSettings(t *testing.T) {
 		}
 	}
 
-	// Should be open with custom settings
 	if cb.State() != gobreaker.StateOpen {
 		t.Errorf("Expected circuit to be Open with custom settings, got %v", cb.State())
 	}
