@@ -5,6 +5,6 @@ type HealthCheck struct {
 	Service string `json:"service"`
 }
 
-type Error struct {
+type ErrorMsg struct {
 	Error string `json:"error"`
 }

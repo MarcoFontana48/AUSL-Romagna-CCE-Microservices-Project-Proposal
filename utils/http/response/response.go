@@ -3,11 +3,31 @@ package response
 import (
 	"errors"
 	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils"
+	"github.com/sony/gobreaker/v2"
 	"io"
 	"log/slog"
 	"net/http"
 )
 
+func Ok(w http.ResponseWriter, jsonByteMsg []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write(jsonByteMsg)
+	if err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+	}
+}
+
+func Error(w http.ResponseWriter, err error) {
+	if errors.Is(err, gobreaker.ErrOpenState) {
+		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	http.Error(w, "Health check failed", http.StatusInternalServerError)
+	return
+}
+
+// Deprecated: Use Ok to handle http ok responses and Error for error responses.
 func SendResponse(w http.ResponseWriter, r *http.Request, msg interface{}) {
 	err := SendOkResponse(w, r, msg)
 	if err != nil {
@@ -19,6 +39,7 @@ func SendResponse(w http.ResponseWriter, r *http.Request, msg interface{}) {
 	}
 }
 
+// Deprecated: Use Ok to handle http ok responses
 func SendOkResponse(w http.ResponseWriter, r *http.Request, msg interface{}) error {
 	err2 := checkSendResponseArguments(w, r)
 	if err2 != nil {
@@ -39,6 +60,7 @@ func SendOkResponse(w http.ResponseWriter, r *http.Request, msg interface{}) err
 	return nil
 }
 
+// Deprecated: Use Error to handle http error responses
 func SendErrorResponse(w http.ResponseWriter, r *http.Request, err error) error {
 	err2 := checkSendResponseArguments(w, r)
 	if err2 != nil {
@@ -49,17 +71,16 @@ func SendErrorResponse(w http.ResponseWriter, r *http.Request, err error) error 
 
 	var status int
 	switch err.(type) {
-	//TODO: add specific error types for better granularity
 	default:
 		status = http.StatusInternalServerError
 	}
 	w.WriteHeader(status)
 
-	errStruct := Error{Error: err.Error()}
-	jsonString, errr := utils.ToJsonString(errStruct)
-	if errr != nil {
-		slog.Error("Error marshaling error response", "error", errr)
-		return errr
+	errStruct := ErrorMsg{Error: err.Error()}
+	jsonString, err3 := utils.ToJsonString(errStruct)
+	if err3 != nil {
+		slog.Error("Error marshaling error response", "error", err3)
+		return err3
 	}
 	writeString, err := io.WriteString(w, jsonString)
 	if err != nil {
