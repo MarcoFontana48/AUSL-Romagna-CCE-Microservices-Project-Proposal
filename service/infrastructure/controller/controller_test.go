@@ -1,31 +1,34 @@
 package controller
 
 import (
+	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/common/metrics"
+	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/http/endpoint"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func mockSendResponse(w http.ResponseWriter, _ *http.Request, _ interface{}) error {
-	w.WriteHeader(http.StatusOK)
-	return nil
-}
+func TestHealthCheckHandler_Success(t *testing.T) {
+	metricsInstance := metrics.New()
+	ctrl := NewController(metricsInstance)
 
-func TestHealthCheckHandler(t *testing.T) {
-	originalSendResponse := sendResponse
-	sendResponse = mockSendResponse
-	defer func() { sendResponse = originalSendResponse }()
-
-	req := httptest.NewRequest("GET", "/health", nil)
-	w := httptest.NewRecorder()
-
-	HealthCheckHandler(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", w.Code)
+	req, err := http.NewRequest("GET", endpoint.Health, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
 
-var sendResponse = func(w http.ResponseWriter, r *http.Request, msg interface{}) error {
-	return nil
+	rr := httptest.NewRecorder()
+
+	ctrl.HealthCheckHandler(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := `{"status":"OK","service":"service"}`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
 }
