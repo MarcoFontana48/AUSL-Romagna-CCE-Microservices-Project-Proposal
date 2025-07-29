@@ -22,7 +22,7 @@ type Metrics struct {
 	healthCheckRequests    *prometheus.CounterVec
 	healthCheckDuration    prometheus.Histogram
 	routesRequests         *prometheus.CounterVec
-	routesDuration        prometheus.Histogram
+	routesDuration         prometheus.Histogram
 }
 
 // New creates a new Metrics instance with all Prometheus metrics initialized
@@ -161,7 +161,7 @@ func (m *Metrics) RecordHealthCheck(status string, duration time.Duration) {
 	m.healthCheckDuration.Observe(duration.Seconds())
 }
 
-func (m* Metrics) RecordRoutesRequest(status string, duration time.Duration) {
+func (m *Metrics) RecordRoutesRequest(status string, duration time.Duration) {
 	m.routesRequests.WithLabelValues(status).Inc()
 	m.routesDuration.Observe(duration.Seconds())
 }
