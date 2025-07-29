@@ -5,6 +5,7 @@ const (
 	Health  string = "/health"
 	Route   string = "/route"
 	Service string = "/service"
+	Metrics string = "/metrics"
 )
 
 var All = []string{
@@ -12,4 +13,5 @@ var All = []string{
 	Health,
 	Route,
 	Service + Health,
+	Service + Metrics,
 }
