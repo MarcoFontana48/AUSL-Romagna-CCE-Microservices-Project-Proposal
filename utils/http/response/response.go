@@ -19,12 +19,14 @@ func Ok(w http.ResponseWriter, jsonByteMsg []byte) {
 }
 
 func Error(w http.ResponseWriter, err error) {
-	if errors.Is(err, gobreaker.ErrOpenState) {
+	switch {
+	case errors.Is(err, gobreaker.ErrOpenState):
 		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
 		return
+	default:
+		http.Error(w, "Health check failed", http.StatusInternalServerError)
+		return
 	}
-	http.Error(w, "Health check failed", http.StatusInternalServerError)
-	return
 }
 
 // Deprecated: Use Ok to handle http ok responses and Error for error responses.
