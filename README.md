@@ -8,6 +8,13 @@ docker-compose down --rmi all -v
 docker-compose up --build -d
 ```
 
+to build and run without removing images:
+
+```bash
+docker-compose down -v
+docker-compose up --build -d
+```
+
 to only build the project and run it in detached mode:
 
 ```bash
@@ -42,4 +49,16 @@ to check all endpoints that can be reached from the API Gateway, you can use the
 
 ```bash
 curl.exe http://localhost:8080/route
+```
+
+to get metrics from API gateway
+
+```bash
+curl.exe http://localhost:8080/metrics
+```
+
+to get metrics from the service
+
+```bash
+curl.exe http://localhost:8080/service/metrics
 ```
