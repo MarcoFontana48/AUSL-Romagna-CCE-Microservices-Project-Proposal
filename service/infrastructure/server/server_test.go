@@ -13,7 +13,6 @@ var (
 	healthHandlerCalled bool
 )
 
-// mock controller
 func mockHealthCheckHandler(w http.ResponseWriter, _ *http.Request) {
 	healthHandlerCalled = true
 	w.WriteHeader(http.StatusOK)
