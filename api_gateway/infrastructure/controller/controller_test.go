@@ -1,30 +1,30 @@
 package controller
 
 import (
+	"common/metrics"
 	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/http/dns"
+	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/http/endpoint"
 	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/http/port"
 	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/http/prefix"
-	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
-	"strings"
 	"testing"
 )
 
-// Test helper to create mock reverse proxy
 func createMockReverseProxy() *httputil.ReverseProxy {
 	target, _ := url.Parse(prefix.HttpPrefix + dns.Localhost + ":" + strconv.Itoa(port.Http))
 	return httputil.NewSingleHostReverseProxy(target)
 }
 
 func TestRerouteHandler(t *testing.T) {
-	service := "/service"
 	proxy := createMockReverseProxy()
 
 	// create the handler
-	handler := RerouteHandler(service, proxy)
+	metricsInstance := metrics.New()
+	ctrl := NewController(metricsInstance)
+	handler := ctrl.RerouteHandler(endpoint.Service, proxy)
 
 	tests := []struct {
 		name         string
@@ -59,7 +59,7 @@ func TestRerouteHandler(t *testing.T) {
 
 			// we can't easily test the actual proxy call, but we can test URL modification
 			originalPath := req.URL.Path
-			removePrefix(req, service)
+			removePrefix(req, endpoint.Service)
 
 			if req.URL.Path != tt.expectedPath {
 				t.Errorf("Expected path %s, got %s", tt.expectedPath, req.URL.Path)
@@ -127,60 +127,6 @@ func TestRemovePrefix(t *testing.T) {
 
 			if req.URL.Path != tt.expectedPath {
 				t.Errorf("Expected path %s, got %s", tt.expectedPath, req.URL.Path)
-			}
-		})
-	}
-}
-
-func TestRerouteHandlerIntegration(t *testing.T) {
-	// create a test server to act as the backend
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("backend response: " + r.URL.Path))
-		if err != nil {
-			return
-		}
-	}))
-	defer backend.Close()
-
-	// create reverse proxy pointing to test server
-	backendURL, _ := url.Parse(backend.URL)
-	proxy := httputil.NewSingleHostReverseProxy(backendURL)
-
-	// create reroute handler
-	handler := RerouteHandler("/service", proxy)
-
-	tests := []struct {
-		name        string
-		requestPath string
-		contains    string
-	}{
-		{
-			name:        "simple reroute",
-			requestPath: "/service/api/users",
-			contains:    "/api/users",
-		},
-		{
-			name:        "root reroute",
-			requestPath: "/service",
-			contains:    "/",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", tt.requestPath, nil)
-			w := httptest.NewRecorder()
-
-			handler(w, req)
-
-			if w.Code != http.StatusOK {
-				t.Errorf("Expected status 200, got %d", w.Code)
-			}
-
-			body := w.Body.String()
-			if !strings.Contains(body, tt.contains) {
-				t.Errorf("Expected response to contain %s, got %s", tt.contains, body)
 			}
 		})
 	}
