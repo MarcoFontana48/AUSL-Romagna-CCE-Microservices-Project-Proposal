@@ -4,11 +4,11 @@ go 1.24
 
 require (
 	github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils v0.0.0
+	github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/common v0.0.0
 	github.com/gorilla/mux v1.8.1
 )
 
 require (
-	github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/common v0.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-redsync/redsync/v4 v4.13.0 // indirect
