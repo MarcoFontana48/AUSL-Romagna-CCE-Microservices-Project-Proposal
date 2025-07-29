@@ -3,7 +3,7 @@ package main
 import (
 	"api_gateway/infrastructure/controller"
 	"api_gateway/infrastructure/server"
-	"common/metrics"
+	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/common/metrics"
 	"github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/utils/log"
 	"log/slog"
 )
