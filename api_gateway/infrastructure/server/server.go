@@ -14,14 +14,18 @@ import (
 	"strconv"
 )
 
-func StartServer() {
+func StartServer(controller *controller.Controller) {
 	r := mux.NewRouter()
+
+	r.Use(controller.GetMetricsMiddleware())
 
 	/* API GATEWAY ENDPOINTS */
 	// health
 	r.HandleFunc(endpoint.Health, controller.HealthCheckHandler).Methods("GET")
 	// route
 	r.HandleFunc(endpoint.Route, controller.RoutesHandler).Methods("GET")
+	// metrics endpoint
+	r.HandleFunc(endpoint.Metrics, controller.GetMetricsHandler).Methods("GET")
 
 	/* REROUTES */
 	// service
