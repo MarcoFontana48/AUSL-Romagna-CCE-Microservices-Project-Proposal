@@ -27,6 +27,12 @@ to only stop the project and remove all containers, networks, images and volumes
 docker-compose down --rmi all -v
 ```
 
+to only stop the project and remove only volumes and containers:
+
+```bash
+docker-compose down -v
+```
+
 to test if the application is running, you can use the following command (windows), if linux remove the `.exe`. It sends an health check request to the API Gateway of the application:
 
 ```bash
