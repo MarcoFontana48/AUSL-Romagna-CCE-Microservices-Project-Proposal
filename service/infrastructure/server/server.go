@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func StartServer(controller *controller.Controller) {
+func StartServer(controller *controller.StandardController) {
 	r := mux.NewRouter()
 
 	// apply metrics middleware to all routes
@@ -20,7 +20,7 @@ func StartServer(controller *controller.Controller) {
 	r.HandleFunc(endpoint.Health, controller.HealthCheckHandler).Methods("GET")
 
 	// metrics endpoint
-	r.HandleFunc(endpoint.Metrics, controller.GetMetricsHandler).Methods("GET")
+	r.HandleFunc(endpoint.Metrics, controller.MetricsHandler).Methods("GET")
 
 	startServing(r)
 }
