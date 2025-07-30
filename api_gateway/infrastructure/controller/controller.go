@@ -28,21 +28,7 @@ func NewController(m *metrics.Metrics) *Controller {
 		metrics: m,
 	}
 
-	// initialize circuit breaker with metrics integration
-	circuitBreakerSettings := gobreaker.Settings{
-		Name:     "api-gateway",
-		Timeout:  time.Second * 30,
-		Interval: time.Second * 60,
-		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-			return counts.Requests >= 5 && failureRatio >= 0.8
-		},
-		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-			c.metrics.RecordCircuitBreakerStateChange(name, to)
-			slog.Info("circuit breaker state changed", "name", name, "from", from, "to", to)
-		},
-	}
-
+	circuitBreakerSettings := getCircuitBreakerDefaultSettings(c)
 	c.circuitBreaker = circuitbreaker.NewCircuitBreaker(circuitBreakerSettings)
 	return c
 }
@@ -58,10 +44,20 @@ func (c *Controller) HealthCheckHandler(w http.ResponseWriter, r *http.Request) 
 
 	msg, err := c.generateHealthCheckMessageResponse()
 	if err != nil {
-		c.sendHealthCheckErrorResponse(w, r, err, startTime)
+		// record metrics for failure
+		c.recordHealthCheckData(startTime, "failure")
+
+		// send error response
+		response.Error(w, err)
+		slog.Error("health check failed, sent response", "content", err, "to", r.RemoteAddr)
 		return
 	}
-	c.sendHealthCheckOkResponse(w, r, msg, startTime)
+	// record metrics for success
+	c.recordHealthCheckData(startTime, "success")
+
+	// send success response
+	response.Ok(w, msg)
+	slog.Info("successful health check, sent response", "content", msg, "to", r.RemoteAddr)
 }
 
 func (c *Controller) RoutesHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,10 +68,25 @@ func (c *Controller) RoutesHandler(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := c.generateRoutesMessageResponse()
 	if err != nil {
-		c.sendRoutesRequestErrorResponse(w, r, err, startTime)
+		// record metrics for failure
+		c.recordRoutesRequestData(startTime, "failure")
+
+		// send error response
+		response.Error(w, err)
+		slog.Error("routes request failed, sent response", "content", err, "to", r.RemoteAddr)
 		return
 	}
-	c.sendRoutesRequestResponse(w, r, msg)
+	// record metrics for success
+	c.recordRoutesRequestData(startTime, "success")
+
+	// send success response
+	response.Ok(w, msg)
+	slog.Info("successful requested routes, sent response", "content", msg, "to", r.RemoteAddr)
+}
+
+// MetricsHandler GetMetricsHandler returns the Prometheus metrics HTTP handler function
+func (c *Controller) MetricsHandler(w http.ResponseWriter, r *http.Request) {
+	c.metrics.Handler().ServeHTTP(w, r)
 }
 
 func (c *Controller) RerouteHandler(service string, serviceProxy *httputil.ReverseProxy) func(w http.ResponseWriter, r *http.Request) {
@@ -97,36 +108,6 @@ func (c *Controller) generateHealthCheckMessageResponse() ([]byte, error) {
 	return msg, err
 }
 
-func (c *Controller) sendHealthCheckErrorResponse(w http.ResponseWriter, r *http.Request, err error, startTime time.Time) {
-	// send error response
-	response.Error(w, err)
-
-	// record metrics for failure
-	elapsedTimeSinceStart := time.Since(startTime)
-	c.recordHealthCheckMetrics("failure", elapsedTimeSinceStart)
-
-	// log the error
-	slog.Error("health check failed, sent response", "content", err, "to", r.RemoteAddr)
-	return
-}
-
-func (c *Controller) sendHealthCheckOkResponse(w http.ResponseWriter, r *http.Request, msg []byte, startTime time.Time) {
-	// send success response
-	response.Ok(w, msg)
-
-	// record metrics for success
-	elapsedTimeSinceStart := time.Since(startTime)
-	c.recordHealthCheckMetrics("success", elapsedTimeSinceStart)
-
-	// log the successful response
-	slog.Info("successful health check, sent response", "content", msg, "to", r.RemoteAddr)
-}
-
-func (c *Controller) recordHealthCheckMetrics(result string, duration time.Duration) {
-	c.metrics.RecordCircuitBreakerRequest("healthcheck", result)
-	c.metrics.RecordHealthCheck(result, duration)
-}
-
 func (c *Controller) generateRoutesMessageResponse() ([]byte, error) {
 	msg, err := c.circuitBreaker.Execute(func() ([]byte, error) {
 		msg := endpoint.All
@@ -135,27 +116,16 @@ func (c *Controller) generateRoutesMessageResponse() ([]byte, error) {
 	return msg, err
 }
 
-func (c *Controller) sendRoutesRequestErrorResponse(w http.ResponseWriter, r *http.Request, err error, startTime time.Time) {
-	// send error response
-	response.Error(w, err)
-
-	// record metrics for failure
+func (c *Controller) recordHealthCheckData(startTime time.Time, status string) {
 	elapsedTimeSinceStart := time.Since(startTime)
-	c.recordRoutesRequestMetrics("failure", elapsedTimeSinceStart)
-
-	// log the error
-	slog.Error("routes request failed, sent response", "content", err, "to", r.RemoteAddr)
-	return
+	c.metrics.RecordCircuitBreakerRequest("healthcheck", status)
+	c.metrics.RecordHealthCheck(status, elapsedTimeSinceStart)
 }
 
-func (c *Controller) sendRoutesRequestResponse(w http.ResponseWriter, r *http.Request, msg []byte) {
-	response.Ok(w, msg)
-	slog.Info("successful requested routes, sent response", "content", msg, "to", r.RemoteAddr)
-}
-
-func (c *Controller) recordRoutesRequestMetrics(result string, duration time.Duration) {
-	c.metrics.RecordCircuitBreakerRequest("routes", result)
-	c.metrics.RecordRoutesRequest(result, duration)
+func (c *Controller) recordRoutesRequestData(startTime time.Time, status string) {
+	elapsedTimeSinceStart := time.Since(startTime)
+	c.metrics.RecordCircuitBreakerRequest("routes", status)
+	c.metrics.RecordRoutesRequest(status, elapsedTimeSinceStart)
 }
 
 func removePrefix(r *http.Request, service string) {
@@ -172,11 +142,6 @@ func (c *Controller) GetMetricsMiddleware() func(http.Handler) http.Handler {
 	return c.metrics.Middleware()
 }
 
-// GetMetricsHandler returns the Prometheus metrics HTTP handler function
-func (c *Controller) GetMetricsHandler(w http.ResponseWriter, r *http.Request) {
-	c.metrics.Handler().ServeHTTP(w, r)
-}
-
 // GetCircuitBreakerMetrics returns current circuit breaker statistics
 func (c *Controller) GetCircuitBreakerMetrics() map[string]interface{} {
 	counts := c.circuitBreaker.Counts()
@@ -188,4 +153,21 @@ func (c *Controller) GetCircuitBreakerMetrics() map[string]interface{} {
 		"consecutive_failures":  counts.ConsecutiveFailures,
 		"state":                 c.circuitBreaker.State().String(),
 	}
+}
+
+func getCircuitBreakerDefaultSettings(c *Controller) gobreaker.Settings {
+	circuitBreakerSettings := gobreaker.Settings{
+		Name:     "api-gateway",
+		Timeout:  time.Second * 30,
+		Interval: time.Second * 60,
+		ReadyToTrip: func(counts gobreaker.Counts) bool {
+			failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
+			return counts.Requests >= 5 && failureRatio >= 0.8
+		},
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			c.metrics.RecordCircuitBreakerStateChange(name, to)
+			slog.Info("circuit breaker state changed", "name", name, "from", from, "to", to)
+		},
+	}
+	return circuitBreakerSettings
 }

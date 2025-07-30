@@ -25,7 +25,7 @@ func StartServer(controller *controller.Controller) {
 	// route
 	r.HandleFunc(endpoint.Route, controller.RoutesHandler).Methods("GET")
 	// metrics endpoint
-	r.HandleFunc(endpoint.Metrics, controller.GetMetricsHandler).Methods("GET")
+	r.HandleFunc(endpoint.Metrics, controller.MetricsHandler).Methods("GET")
 
 	/* REROUTES */
 	// service
