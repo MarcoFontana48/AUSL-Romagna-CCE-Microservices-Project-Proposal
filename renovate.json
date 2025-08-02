@@ -6,20 +6,26 @@
   "baseBranches": ["dev"],
   "requiredStatusChecks": ["build and test"],
   "automergeStrategy": "merge-commit",
+  "platformAutomerge": true,
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr",
+      "addLabels": ["patch-update"]
     },
     {
       "matchUpdateTypes": ["minor"],
       "matchDepTypes": ["devDependencies"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr",
+      "addLabels": ["minor-update"]
     },
     {
       "matchUpdateTypes": ["major"],
-      "automerge": false,
-      "addLabels": ["major-update", "review-required"]
+      "automerge": true,
+      "automergeType": "pr",
+      "addLabels": ["major-update"]
     }
   ]
 }
