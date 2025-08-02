@@ -4,7 +4,7 @@
     "config:recommended"
   ],
   "baseBranches": ["dev"],
-  "requiredStatusChecks": ["ci/tests"],
+  "requiredStatusChecks": ["build and test"],
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin"],
@@ -14,7 +14,8 @@
     {
       "matchUpdateTypes": ["minor"],
       "matchDepTypes": ["devDependencies"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr"
     },
     {
       "matchUpdateTypes": ["major"],
