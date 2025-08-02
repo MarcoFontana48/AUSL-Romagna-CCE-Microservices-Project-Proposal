@@ -165,7 +165,7 @@ spec:
             - containerPort: 8080
           env:
             - name: LOG_LEVEL
-              value: "debug"
+              value: "info"
             - name: LOG_ADD_SOURCE
               value: "false"
           livenessProbe:
@@ -230,7 +230,7 @@ spec:
             - containerPort: 8080
           env:
             - name: LOG_LEVEL
-              value: "debug"
+              value: "info"
             - name: LOG_ADD_SOURCE
               value: "false"
           livenessProbe:
