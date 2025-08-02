@@ -4,18 +4,16 @@
     "config:recommended"
   ],
   "baseBranches": ["dev"],
-  "requiredStatusChecks": ["build and test"],
+  "automergeStrategy": "merge-commit",
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin"],
-      "automerge": true,
-      "automergeType": "pr"
+      "automerge": true
     },
     {
       "matchUpdateTypes": ["minor"],
       "matchDepTypes": ["devDependencies"],
-      "automerge": true,
-      "automergeType": "pr"
+      "automerge": true
     },
     {
       "matchUpdateTypes": ["major"],
