@@ -205,7 +205,7 @@ jobs:
           echo "All tests passed successfully!"
 
   push-docker-images:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     name: Build and Push Docker Images
     needs: build-and-test
 
@@ -244,7 +244,7 @@ jobs:
             type=sha,prefix=${{ github.ref_name }}-,suffix=-${{ matrix.service.suffix }}
 
       - name: Build and push ${{ matrix.service.name }}
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ${{ matrix.service.dockerfile }}
