@@ -16,7 +16,7 @@ kubectl delete -f k8s-manifest.yaml
 kubectl apply -f k8s-manifest.yaml
 ```
 
-to only delete
+to only delete containers
 
 ```bash
 kubectl delete -f k8s-manifest.yaml
