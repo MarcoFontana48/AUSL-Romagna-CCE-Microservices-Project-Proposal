@@ -246,7 +246,7 @@ jobs:
             type=sha,prefix=${{ github.ref_name }}-,suffix=-${{ matrix.service.suffix }}
 
       - name: Build and push ${{ matrix.service.name }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.service.dockerfile }}
