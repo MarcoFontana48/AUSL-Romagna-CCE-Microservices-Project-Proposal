@@ -4,8 +4,7 @@
     "config:recommended"
   ],
   "baseBranches": ["dev"],
-  "automergeStrategy": "merge-commit",
-  "platformAutomerge": true,
+  "requiredStatusChecks": ["build and test"],
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin"],
