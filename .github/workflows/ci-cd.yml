@@ -205,7 +205,7 @@ jobs:
           echo "All tests passed successfully!"
 
   push-docker-images:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Build and Push Docker Images
     needs: build-and-test
 
