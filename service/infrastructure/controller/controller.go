@@ -59,7 +59,7 @@ func (c *StandardController) HealthCheckHandler(w http.ResponseWriter, r *http.R
 	response.Ok(w, msg)
 
 	// log the successful response
-	slog.Info("successful health check, sent response", "content", msg, "to", r.RemoteAddr)
+	slog.Debug("successful health check, sent response", "content", msg, "content_as_string", string(msg), "to", r.RemoteAddr)
 }
 
 // MetricsHandler returns the Prometheus metrics HTTP handler function
