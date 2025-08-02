@@ -12,6 +12,7 @@ var All = []string{
 	Root,
 	Health,
 	Route,
+	Metrics,
 	Service + Health,
 	Service + Metrics,
 }
