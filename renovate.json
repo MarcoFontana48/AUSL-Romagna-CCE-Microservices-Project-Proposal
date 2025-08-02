@@ -3,7 +3,23 @@
   "extends": [
     "config:recommended"
   ],
-  "baseBranchPatterns": [
-    "dev"
+  "baseBranches": ["dev"],
+  "requiredStatusChecks": ["ci/tests"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch", "pin"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "matchUpdateTypes": ["minor"],
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["major-update", "review-required"]
+    }
   ]
 }
