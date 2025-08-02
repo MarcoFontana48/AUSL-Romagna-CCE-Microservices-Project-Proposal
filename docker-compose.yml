@@ -30,7 +30,7 @@ services:
     container_name: service
     environment:
       - LOG_LEVEL=debug
-      - LOG_ADD_SOURCE=false
+      - LOG_ADD_SOURCE=true
     networks:
       - app-network
     healthcheck:
@@ -50,7 +50,7 @@ services:
     container_name: api_gateway
     environment:
       - LOG_LEVEL=debug
-      - LOG_ADD_SOURCE=false
+      - LOG_ADD_SOURCE=true
     ports:
       - "8080:8080"
     networks:
