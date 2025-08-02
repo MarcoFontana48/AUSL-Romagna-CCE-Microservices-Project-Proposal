@@ -4,6 +4,7 @@
     "config:recommended"
   ],
   "baseBranches": ["dev"],
+  "requiredStatusChecks": ["ci-cd"],
   "automergeStrategy": "merge-commit",
   "packageRules": [
     {
