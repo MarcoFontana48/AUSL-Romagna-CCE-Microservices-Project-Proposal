@@ -57,7 +57,7 @@ func (c *Controller) HealthCheckHandler(w http.ResponseWriter, r *http.Request) 
 
 	// send success response
 	response.Ok(w, msg)
-	slog.Info("successful health check, sent response", "content", msg, "to", r.RemoteAddr)
+	slog.Debug("successful health check, sent response", "content", msg, "content_as_string", string(msg), "to", r.RemoteAddr)
 }
 
 func (c *Controller) RoutesHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (c *Controller) RoutesHandler(w http.ResponseWriter, r *http.Request) {
 
 	// send success response
 	response.Ok(w, msg)
-	slog.Info("successful requested routes, sent response", "content", msg, "to", r.RemoteAddr)
+	slog.Debug("successful requested routes, sent response", "content", msg, "content_as_string", string(msg), "to", r.RemoteAddr)
 }
 
 // MetricsHandler GetMetricsHandler returns the Prometheus metrics HTTP handler function
