@@ -93,7 +93,7 @@ func (c *Controller) RerouteHandler(service string, serviceProxy *httputil.Rever
 	return func(w http.ResponseWriter, r *http.Request) {
 		// remove prefix before forwarding
 		removePrefix(r, service)
-		slog.Debug("Forwarding request to "+service, "endpoint", r.URL.Path)
+		slog.Debug("Forwarding request to '"+service+"'", "endpoint", r.URL.Path)
 		serviceProxy.ServeHTTP(w, r)
 	}
 }
