@@ -102,7 +102,7 @@ func (c *Controller) RerouteHandler(service string, serviceProxy *httputil.Rever
 
 func (c *Controller) generateHealthCheckMessageResponse() ([]byte, error) {
 	msg, err := c.circuitBreaker.Execute(func() ([]byte, error) {
-		msg := response.HealthCheck{Status: "OK", Service: "service"}
+		msg := response.HealthCheck{Status: "OK", Service: "api-gateway"}
 		return json.Marshal(msg)
 	})
 	return msg, err
