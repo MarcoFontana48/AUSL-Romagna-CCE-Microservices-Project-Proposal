@@ -23,13 +23,13 @@ data:
       
       - job_name: 'service'
         static_configs:
-          - targets: ['service-service:8080']
+          - targets: ['service:8080']
         metrics_path: '/metrics'
         scrape_interval: 10s
       
       - job_name: 'api-gateway'
         static_configs:
-          - targets: ['api-gateway-service:8080']
+          - targets: ['api-gateway:8080']
         metrics_path: '/metrics'
         scrape_interval: 10s
 ---
@@ -131,7 +131,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: prometheus-service
+  name: prometheus
   namespace: monitoring-app
 spec:
   selector:
@@ -198,7 +198,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: service-service
+  name: service
   namespace: monitoring-app
 spec:
   selector:
@@ -296,7 +296,7 @@ spec:
             - |
               echo "Waiting for service to be ready..."
               for i in $(seq 1 60); do
-                if wget --spider --quiet --timeout=3 --tries=1 http://service-service:8080/health 2>/dev/null; then
+                if wget --spider --quiet --timeout=3 --tries=1 http://service:8080/health 2>/dev/null; then
                   echo "Service is ready!"
                   exit 0
                 fi
@@ -310,7 +310,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: api-gateway-service
+  name: api-gateway
   namespace: monitoring-app
 spec:
   selector:
