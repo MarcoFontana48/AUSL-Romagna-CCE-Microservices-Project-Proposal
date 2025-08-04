@@ -14,8 +14,8 @@ how to build and run the entire project (it also builds all images before runnin
 If you want to deploy the project on kubernets, run the following commands (then wait some minutes to make sure everything is up and running correctly before running other commands):
 
 ```bash
-kubectl delete -f k8s-manifest.yaml
-kubectl apply -f k8s-manifest.yaml
+kubectl delete -f kubernetes/
+kubectl apply -f kubernetes/
 ```
 
 to only delete containers
