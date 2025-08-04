@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/compare/v1.0.0...v1.1.0) (2025-08-04)
+
+
+### Features
+
+* test feat for semantic release bot ([cd4c8c0](https://github.com/MarcoFontana48/AUSL-Romagna-CCE-Microservices-Project-Proposal/commit/cd4c8c03babab2cbd0f35e167d510768a615026c))
+
 # 1.0.0 (2025-08-04)
 
 
